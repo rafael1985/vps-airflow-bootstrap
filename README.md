@@ -60,8 +60,11 @@ secret_deploy_user: "deploy"
 secret_airflow_domain: "airflow.yourdomain.com"
 secret_caddy_tls_email: "you@example.com"
 secret_airflow_secret_key : #python3 -c "import secrets; print(secrets.token_hex(32))"
+secret_airflow_admin_username: "admin"
 secret_airflow_admin_password: "airflowpassword"
+secret_postgres_password: #python3 -c "import secrets; print(secrets.token_hex(8))"
 ```
+These values are injected into the `.env` file during provisioning and never touch the repository
 
 > ⚠️ `vars/secret.yml` is in `.gitignore` and must **never** be committed.
 
@@ -78,29 +81,9 @@ Edit `inventories/production.ini` with your VPS IP.
 ### 5. Add your SSH public key 
 
 ```bash
-cat ~/.ssh/id_ed25519.pub >> roles/security/files/deploy_authorized_keys
+mkdir -p roles/security/files && cat ~/.ssh/id_ed25519.pub >> roles/security/files/deploy_authorized_keys
 ```
-
 > ⚠️ This file is in `.gitignore`. Without it, the deploy user will have no SSH access after hardening.
-
-### 6. Configure Airflow and database secrets
-
-Generate strong secret values:
-```bash
-# Airflow webserver secret key
-python3 -c "import secrets; print(secrets.token_hex(32))"
-```
-
-Add the generated value to `vars/secret.yml`:
-
-```yaml
-secret_airflow_secret_key: "paste-generated-value-here"
-secret_airflow_admin_username: "admin"
-secret_airflow_admin_password: "your-strong-admin-password"
-
-secret_postgres_password: "paste-generated-value-here"
-```
-These values are injected into the `.env` file during provisioning and never touch the repository
 
 ## Run
 
@@ -174,13 +157,6 @@ vps-airflow-bootstrap/
 └── .github/workflows/lint.yml          # CI: ansible-lint + syntax check
 ```
 
----
 
-## Roadmap
 
-| Phase | Improvement |
-|---|---|
-| v1 | Current playbook |
-| v2 | Monitoring: Netdata via compose |
-| v3 | Volume backup to object storage |
-| v4 | Per-project isolation (Docker networks) |
+

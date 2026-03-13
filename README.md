@@ -151,6 +151,8 @@ vps-airflow-bootstrap/
 │   └── production.ini                  # ⚠️ Local only, in .gitignore
 ├── roles/
 │   ├── security/                       # SSH hardening, firewall, fail2ban
+│   │   └── files/
+│   │       └── deploy_authorized_keys  # ⚠️ Local only, in .gitignore — add your public key here
 │   ├── docker/                         # Docker CE + Compose v2
 │   ├── caddy/                          # Reverse proxy + automatic TLS
 │   └── airflow/                        # Directories, compose, health check

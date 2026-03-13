@@ -1,0 +1,12 @@
+---
+profile: moderate
+
+exclude_paths:
+  - .git/
+  - inventories/
+
+warn_list:
+  - yaml[line-length]
+
+skip_list:
+  - no-changed-when

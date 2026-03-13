@@ -1,0 +1,19 @@
+# Virtual environment
+.venv/
+
+# Ansible
+*.retry
+
+# Python
+*.pyc
+__pycache__/
+*.log
+
+# Sensitive variables — never commit
+vars/secret.yml
+
+# Inventory with real IP — never commit
+inventories/production.ini
+
+# SSH keys — never commit
+roles/security/files/deploy_authorized_keys

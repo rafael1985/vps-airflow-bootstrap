@@ -1,0 +1,76 @@
+---
+# ============================================================
+# vps-bootstrap — main playbook
+# Transforms a fresh CentOS 9 VPS into a production-ready
+# Airflow platform in a single run.
+#
+# Usage (first run — fresh VPS, SSH on port 22):
+#   ansible-playbook playbook.yml -i inventories/production.ini
+#
+# Re-run safe: all tasks are idempotent.
+# ============================================================
+
+- name: Bootstrap VPS — overdrivedata.tech
+  hosts: vps
+  become: true
+  vars_files:
+    - vars/main.yml
+    - vars/secret.yml
+
+  pre_tasks:
+    - name: Assert OS is CentOS/RHEL 9
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution in ["CentOS", "RedHat", "Rocky", "AlmaLinux"]
+          - ansible_distribution_major_version == "9"
+        fail_msg: "This playbook requires CentOS/RHEL 9. Detected: {{ ansible_distribution }} {{ ansible_distribution_major_version }}"
+
+    - name: Update package cache
+      ansible.builtin.dnf:
+        update_cache: true
+
+  roles:
+    - role: security
+      tags: security
+
+    - role: docker
+      tags: docker
+
+    - role: caddy
+      tags: caddy
+
+    - role: airflow
+      tags: airflow
+
+  post_tasks:
+    - name: Check critical services status
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+      register: service_status
+      loop:
+        - docker
+        - caddy
+        - fail2ban
+        - firewalld
+
+    - name: Display service status
+      ansible.builtin.debug:
+        msg: "{{ item.item }}: {{ item.status.ActiveState }}"
+      loop: "{{ service_status.results }}"
+
+    - name: Health check — Airflow via HTTP
+      ansible.builtin.uri:
+        url: "http://localhost:{{ airflow_port }}/health"
+        status_code: 200
+      register: airflow_health
+      retries: 10
+      delay: 10
+      until: airflow_health.status == 200
+
+    - name: Bootstrap complete
+      ansible.builtin.debug:
+        msg: |
+          ✅ VPS provisioned successfully!
+          🌐 Airflow: https://{{ airflow_domain }}
+          👤 Deploy user: {{ deploy_user }}
+          🔒 SSH port: {{ ssh_port }}

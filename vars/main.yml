@@ -1,0 +1,36 @@
+# ============================================================
+# vps-bootstrap — global variables
+# Sensitive values must be defined in vars/secret.yml
+# (never commit vars/secret.yml — it is in .gitignore)
+#
+# Setup: cp vars/secret.yml.example vars/secret.yml
+# ============================================================
+
+# --- Server ---
+vps_ip: "{{ secret_vps_ip }}"
+ssh_port: "{{ secret_ssh_port }}"
+
+# --- Deploy user ---
+deploy_user: "{{ secret_deploy_user }}"
+deploy_shell: /bin/bash
+
+# --- Domain and TLS ---
+airflow_domain: "{{ secret_airflow_domain }}"
+caddy_tls_email: "{{ secret_caddy_tls_email }}"
+
+# --- Airflow ---
+airflow_uid: 50000
+airflow_base_dir: /opt/airflow
+airflow_image: apache/airflow:2.9.3
+airflow_port: 8080
+
+# --- Projects ---
+projects_base_dir: /opt/projects
+
+# --- Fail2ban ---
+fail2ban_maxretry: 5
+fail2ban_findtime: 600
+fail2ban_bantime: 3600
+
+# --- Automatic updates ---
+auto_update_apply: security

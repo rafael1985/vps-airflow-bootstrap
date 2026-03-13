@@ -1,0 +1,50 @@
+---
+# ============================================================
+# role: caddy
+# Installs Caddy 2 via official COPR repository.
+# Configures reverse proxy with automatic TLS for Airflow.
+# ============================================================
+
+- name: Add Caddy COPR repository
+  ansible.builtin.command: >
+    dnf copr enable -y @caddy/caddy epel-9-x86_64
+  args:
+    creates: /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:caddy:caddy.repo
+
+- name: Install Caddy
+  ansible.builtin.dnf:
+    name: caddy
+    state: present
+
+- name: Create Caddy log directory
+  ansible.builtin.file:
+    path: /var/log/caddy
+    state: directory
+    owner: caddy
+    group: caddy
+    mode: "0755"
+    recurse: true
+
+- name: Ensure Caddy log file exists with correct permissions
+  ansible.builtin.file:
+    path: /var/log/caddy/airflow.log
+    state: touch
+    owner: caddy
+    group: caddy
+    mode: "0644"
+
+- name: Deploy Caddyfile
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: /etc/caddy/Caddyfile
+    owner: caddy
+    group: caddy
+    mode: "0644"
+    validate: caddy validate --adapter caddyfile --config %s
+  notify: Reload caddy
+
+- name: Enable and start Caddy
+  ansible.builtin.systemd:
+    name: caddy
+    enabled: true
+    state: started

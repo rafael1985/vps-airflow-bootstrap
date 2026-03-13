@@ -1,0 +1,69 @@
+---
+# ============================================================
+# role: airflow
+# Creates directory structure, sets permissions, and starts
+# Airflow via Docker Compose with PostgreSQL backend.
+# ============================================================
+
+- name: Create Airflow directory structure
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ airflow_uid }}"
+    group: "0"
+    mode: "0775"
+  loop:
+    - "{{ airflow_base_dir }}"
+    - "{{ airflow_base_dir }}/dags"
+    - "{{ airflow_base_dir }}/logs"
+    - "{{ airflow_base_dir }}/plugins"
+    - "{{ airflow_base_dir }}/config"
+
+- name: Create projects base directory
+  ansible.builtin.file:
+    path: "{{ projects_base_dir }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: docker
+    mode: "0775"
+
+- name: Deploy Airflow .env file
+  ansible.builtin.template:
+    src: airflow.env.j2
+    dest: "{{ airflow_base_dir }}/.env"
+    owner: "{{ deploy_user }}"
+    group: docker
+    mode: "0640"
+
+- name: Deploy Airflow docker-compose file
+  ansible.builtin.copy:
+    src: docker-compose.airflow.yml
+    dest: "{{ airflow_base_dir }}/docker-compose.yml"
+    owner: "{{ deploy_user }}"
+    group: docker
+    mode: "0644"
+
+- name: Pull Airflow image
+  community.docker.docker_image:
+    name: "{{ airflow_image }}"
+    source: pull
+
+- name: Pull PostgreSQL image
+  community.docker.docker_image:
+    name: postgres:15
+    source: pull
+
+- name: Start Airflow stack via Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ airflow_base_dir }}"
+    state: present
+    pull: missing
+
+- name: Wait for Airflow to become healthy
+  ansible.builtin.uri:
+    url: "http://localhost:{{ airflow_port }}/health"
+    status_code: 200
+  register: result
+  until: result.status == 200
+  retries: 20
+  delay: 15

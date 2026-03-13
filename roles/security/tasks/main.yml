@@ -1,0 +1,123 @@
+---
+# ============================================================
+# role: security
+# SSH hardening, firewall, fail2ban, automatic updates,
+# and deploy user creation.
+# ============================================================
+
+# --- Base packages ---
+- name: Install base packages
+  ansible.builtin.dnf:
+    name:
+      - git
+      - curl
+      - wget
+      - vim
+      - jq
+      - epel-release
+    state: present
+
+- name: Install fail2ban and dnf-automatic (requires EPEL)
+  ansible.builtin.dnf:
+    name:
+      - fail2ban
+      - fail2ban-systemd
+      - dnf-automatic
+    state: present
+
+# --- Deploy user ---
+- name: Create deploy user
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    shell: "{{ deploy_shell }}"
+    create_home: true
+    state: present
+
+- name: Add authorized SSH key to deploy user
+  ansible.posix.authorized_key:
+    user: "{{ deploy_user }}"
+    state: present
+    key: "{{ lookup('file', 'files/deploy_authorized_keys') }}"
+
+# --- SSH hardening ---
+- name: Deploy SSH hardening config
+  ansible.builtin.template:
+    src: sshd_hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/hardening.conf
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Restart sshd
+
+# --- Firewall ---
+- name: Ensure firewalld is enabled and started
+  ansible.builtin.systemd:
+    name: firewalld
+    enabled: true
+    state: started
+
+- name: Open custom SSH port ({{ ssh_port }})
+  ansible.posix.firewalld:
+    port: "{{ ssh_port }}/tcp"
+    permanent: true
+    state: enabled
+    immediate: true
+
+- name: Open HTTP (80) — Caddy redirect
+  ansible.posix.firewalld:
+    service: http
+    permanent: true
+    state: enabled
+    immediate: true
+
+- name: Open HTTPS (443) — Airflow via Caddy
+  ansible.posix.firewalld:
+    service: https
+    permanent: true
+    state: enabled
+    immediate: true
+
+- name: Block Airflow port externally (8080 localhost only)
+  ansible.posix.firewalld:
+    port: "{{ airflow_port }}/tcp"
+    permanent: true
+    state: disabled
+    immediate: true
+
+- name: Remove default SSH port (22) from firewall
+  ansible.posix.firewalld:
+    service: ssh
+    permanent: true
+    state: disabled
+    immediate: true
+
+# --- Fail2ban ---
+- name: Deploy fail2ban config
+  ansible.builtin.template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart fail2ban
+
+- name: Enable and start fail2ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    enabled: true
+    state: started
+
+# --- Automatic security updates ---
+- name: Configure dnf-automatic for security patches
+  ansible.builtin.template:
+    src: dnf-automatic.conf.j2
+    dest: /etc/dnf/automatic.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Enable dnf-automatic timer
+  ansible.builtin.systemd:
+    name: dnf-automatic.timer
+    enabled: true
+    state: started

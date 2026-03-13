@@ -1,0 +1,62 @@
+---
+# ============================================================
+# role: docker
+# Installs Docker CE + Compose v2 from the official repository.
+# Never uses podman-docker or the CentOS base repo docker package.
+# ============================================================
+
+- name: Remove old Docker versions if present
+  ansible.builtin.dnf:
+    name:
+      - docker
+      - docker-client
+      - docker-client-latest
+      - docker-common
+      - docker-latest
+      - docker-latest-logrotate
+      - docker-logrotate
+      - docker-engine
+      - podman-docker
+    state: absent
+
+- name: Install dnf-plugins-core
+  ansible.builtin.dnf:
+    name: dnf-plugins-core
+    state: present
+
+- name: Add official Docker CE repository
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/centos/docker-ce.repo
+    dest: /etc/yum.repos.d/docker-ce.repo
+    mode: "0644"
+
+- name: Install Docker CE and Compose plugin
+  ansible.builtin.dnf:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+    state: present
+
+- name: Enable and start Docker
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+  notify: Verify docker running
+
+- name: Add deploy user to docker group
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    groups: docker
+    append: true
+
+- name: Verify docker compose v2
+  ansible.builtin.command: docker compose version
+  register: compose_version
+  changed_when: false
+
+- name: Display Compose version
+  ansible.builtin.debug:
+    msg: "{{ compose_version.stdout }}"

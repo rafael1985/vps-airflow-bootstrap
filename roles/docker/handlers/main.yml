@@ -1,0 +1,4 @@
+---
+- name: Verify docker running
+  ansible.builtin.command: docker info
+  changed_when: false

@@ -1,4 +1,4 @@
-# vps-bootstrap
+# vps-airflow-bootstrap
 
 Provisions a fresh CentOS 9 VPS into a production-ready Airflow orchestration platform with a single command.
 
@@ -32,8 +32,8 @@ On the operator machine:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/vps-bootstrap.git
-cd vps-bootstrap
+git clone https://github.com/your-username/vps-airflow-bootstrap.git
+cd vps-airflow-bootstrap
 ```
 
 ### 2. Create the virtual environment
@@ -154,7 +154,7 @@ curl -I https://<airflow_domain>   # Airflow accessible via HTTPS
 ## Repository structure
 
 ```
-vps-bootstrap/
+vps-airflow-bootstrap/
 ├── playbook.yml                        # Ansible entrypoint
 ├── requirements.txt                    # Python dependencies (uv)
 ├── requirements.yml                    # Ansible collections

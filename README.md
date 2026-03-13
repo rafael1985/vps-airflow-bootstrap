@@ -32,7 +32,7 @@ On the operator machine:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/vps-airflow-bootstrap.git
+git clone git@github.com:rafael1985/vps-airflow-bootstrap.git
 cd vps-airflow-bootstrap
 ```
 

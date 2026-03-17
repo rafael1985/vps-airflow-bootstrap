@@ -16,6 +16,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks: [airflow_default]
     restart: always
 
   airflow-init:
@@ -40,6 +41,7 @@ services:
       _AIRFLOW_WWW_USER_EMAIL: ${AIRFLOW_ADMIN_EMAIL}
       _AIRFLOW_WWW_USER_ROLE: Admin
     user: "0:0"
+    networks: [airflow_default]
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,6 +63,7 @@ services:
       - ${AIRFLOW_BASE_DIR}/plugins:/opt/airflow/plugins
       - ${AIRFLOW_BASE_DIR}/config:/opt/airflow/config
     user: "${AIRFLOW_UID:-50000}:0"
+    networks: [airflow_default]
     ports:
       - "127.0.0.1:8080:8080"
     healthcheck:
@@ -91,7 +94,8 @@ services:
       - ${AIRFLOW_BASE_DIR}/logs:/opt/airflow/logs
       - ${AIRFLOW_BASE_DIR}/plugins:/opt/airflow/plugins
       - ${AIRFLOW_BASE_DIR}/config:/opt/airflow/config
-    user: "${AIRFLOW_UID:-50000}:0"
+      - /var/run/docker.sock:/var/run/docker.sock
+    user: "${AIRFLOW_UID:-50000}:${DOCKER_GID:-994}" # docker group GID on the host (CentOS 9). To verify: stat -c '%g' /var/run/docker.sock
     healthcheck:
       test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname \"$${HOSTNAME}\""]
       interval: 30s
@@ -99,6 +103,7 @@ services:
       retries: 5
       start_period: 30s
     restart: always
+    networks: [airflow_default]
     depends_on:
       postgres:
         condition: service_healthy
@@ -107,3 +112,6 @@ services:
 
 volumes:
   postgres-db-volume:
+networks:
+  airflow_default:
+    name: airflow_default

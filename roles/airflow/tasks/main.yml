@@ -5,7 +5,7 @@
 # Airflow via Docker Compose with PostgreSQL backend.
 # ============================================================
 
-- name: Create Airflow directory structure
+- name: Create Airflow base directories
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -14,10 +14,17 @@
     mode: "0775"
   loop:
     - "{{ airflow_base_dir }}"
-    - "{{ airflow_base_dir }}/dags"
     - "{{ airflow_base_dir }}/logs"
     - "{{ airflow_base_dir }}/plugins"
     - "{{ airflow_base_dir }}/config"
+
+- name: Create Airflow dags directory owned by deploy user
+  ansible.builtin.file:
+    path: "{{ airflow_base_dir }}/dags"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0775"
 
 - name: Create projects base directory
   ansible.builtin.file:
